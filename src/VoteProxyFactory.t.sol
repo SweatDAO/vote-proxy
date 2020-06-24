@@ -4,7 +4,7 @@ import "ds-test/test.sol";
 import "./VoteProxyFactory.sol";
 
 contract VoteUser {
-    DSChief chief;
+    VoteQuorum voteQuorum;
     VoteProxyFactory voteProxyFactory;
 
     constructor(VoteProxyFactory voteProxyFactory_) public {
@@ -37,12 +37,12 @@ contract VoteUser {
         _token.approve(_proxy);
     }
 
-    function proxyLock(VoteProxy _proxy, uint amount) public {
-        _proxy.lock(amount);
+    function proxyAddVotingWeight(VoteProxy _proxy, uint amount) public {
+        _proxy.addVotingWeight(amount);
     }
 
-    function proxyFree(VoteProxy _proxy, uint amount) public {
-        _proxy.free(amount);
+    function proxyRemoveVotingWeight(VoteProxy _proxy, uint amount) public {
+        _proxy.removeVotingWeight(amount);
     }
 }
 
@@ -53,7 +53,7 @@ contract VoteProxyFactoryTest is DSTest {
     VoteProxyFactory voteProxyFactory;
     DSToken gov;
     DSToken iou;
-    DSChief chief;
+    VoteQuorum voteQuorum;
 
     VoteUser cold;
     VoteUser hot;
@@ -61,9 +61,9 @@ contract VoteProxyFactoryTest is DSTest {
     function setUp() public {
         gov = new DSToken("GOV");
 
-        DSChiefFab fab = new DSChiefFab();
-        chief = fab.newChief(gov, electionSize);
-        voteProxyFactory = new VoteProxyFactory(chief);
+        VoteQuorumFactory quorumFactory = new VoteQuorumFactory();
+        voteQuorum = quorumFactory.newVoteQuorum(gov, electionSize);
+        voteProxyFactory = new VoteProxyFactory(voteQuorum);
         cold = new VoteUser(voteProxyFactory);
         hot  = new VoteUser(voteProxyFactory);
     }
@@ -107,12 +107,12 @@ contract VoteProxyFactoryTest is DSTest {
     function test_tryBreakLink() public {
         cold.doInitiateLink(address(hot));
         VoteProxy voteProxy = hot.doApproveLink(address(cold));
-        chief.GOV().mint(address(cold), 1);
-        cold.proxyApprove(address(voteProxy), chief.GOV());
-        cold.proxyLock(voteProxy, 1);
+        voteQuorum.GOV().mint(address(cold), 1);
+        cold.proxyApprove(address(voteProxy), voteQuorum.GOV());
+        cold.proxyAddVotingWeight(voteProxy, 1);
         assertTrue(!cold.tryBreakLink());
 
-        cold.proxyFree(voteProxy, 1);
+        cold.proxyRemoveVotingWeight(voteProxy, 1);
         assertTrue(cold.tryBreakLink());
     }
 

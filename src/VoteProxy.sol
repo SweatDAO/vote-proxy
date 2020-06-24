@@ -19,51 +19,51 @@
 pragma solidity >=0.4.24;
 
 import "ds-token/token.sol";
-import "ds-chief/chief.sol";
+import "ds-vote-quorum/VoteQuorum.sol";
 
 contract VoteProxy {
     address public cold;
     address public hot;
     DSToken public gov;
     DSToken public iou;
-    DSChief public chief;
+    VoteQuorum public voteQuorum;
 
-    constructor(DSChief _chief, address _cold, address _hot) public {
-        chief = _chief;
+    constructor(VoteQuorum _voteQuorum, address _cold, address _hot) public {
+        voteQuorum = _voteQuorum;
         cold = _cold;
         hot = _hot;
 
-        gov = chief.GOV();
-        iou = chief.IOU();
-        gov.approve(address(chief), uint256(-1));
-        iou.approve(address(chief), uint256(-1));
+        gov = voteQuorum.GOV();
+        iou = voteQuorum.IOU();
+        gov.approve(address(voteQuorum), uint256(-1));
+        iou.approve(address(voteQuorum), uint256(-1));
     }
 
-    modifier auth() {
+    modifier isAuthorized() {
         require(msg.sender == hot || msg.sender == cold, "Sender must be a Cold or Hot Wallet");
         _;
     }
 
-    function lock(uint256 wad) public auth {
-        gov.pull(cold, wad);   // mkr from cold
-        chief.lock(wad);       // mkr out, ious in
+    function addVotingWeight(uint256 wad) public isAuthorized {
+        gov.pull(cold, wad);              // protocol tokens from cold
+        voteQuorum.addVotingWeight(wad);  // protocol tokens out, ious in
     }
 
-    function free(uint256 wad) public auth {
-        chief.free(wad);       // ious out, mkr in
-        gov.push(cold, wad);   // mkr to cold
+    function removeVotingWeight(uint256 wad) public isAuthorized {
+        voteQuorum.removeVotingWeight(wad);  // ious out, protocol tokens in
+        gov.push(cold, wad);                 // protocol tokens to cold
     }
 
-    function freeAll() public auth {
-        chief.free(chief.deposits(address(this)));
+    function removeAllVotingWeight() public isAuthorized {
+        voteQuorum.removeVotingWeight(voteQuorum.deposits(address(this)));
         gov.push(cold, gov.balanceOf(address(this)));
     }
 
-    function vote(address[] memory yays) public auth returns (bytes32) {
-        return chief.vote(yays);
+    function vote(address[] memory candidates) public isAuthorized returns (bytes32) {
+        return voteQuorum.vote(candidates);
     }
 
-    function vote(bytes32 slate) public auth {
-        chief.vote(slate);
+    function vote(bytes32 ballot) public isAuthorized {
+        voteQuorum.vote(ballot);
     }
 }
