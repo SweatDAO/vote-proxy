@@ -107,8 +107,8 @@ contract VoteProxyFactoryTest is DSTest {
     function test_tryBreakLink() public {
         cold.doInitiateLink(address(hot));
         VoteProxy voteProxy = hot.doApproveLink(address(cold));
-        voteQuorum.GOV().mint(address(cold), 1);
-        cold.proxyApprove(address(voteProxy), voteQuorum.GOV());
+        voteQuorum.PROT().mint(address(cold), 1);
+        cold.proxyApprove(address(voteProxy), voteQuorum.PROT());
         cold.proxyAddVotingWeight(voteProxy, 1);
         assertTrue(!cold.tryBreakLink());
 

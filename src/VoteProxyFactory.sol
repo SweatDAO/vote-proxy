@@ -28,6 +28,7 @@ contract VoteProxyFactory {
 
     event LinkRequested(address indexed cold, address indexed hot);
     event LinkConfirmed(address indexed cold, address indexed hot, address indexed voteProxy);
+    event BreakLink(address indexed cold, address indexed hot, address indexed voteProxy);
 
     constructor(VoteQuorum voteQuorum_) public { voteQuorum = voteQuorum_; }
 
@@ -62,6 +63,8 @@ contract VoteProxyFactory {
         address cold = voteProxy.cold();
         address hot = voteProxy.hot();
         require(voteQuorum.deposits(address(voteProxy)) == 0, "VoteProxy still has funds attached to it");
+
+        emit BreakLink(cold, hot, address(voteProxy));
 
         delete coldMap[cold];
         delete hotMap[hot];

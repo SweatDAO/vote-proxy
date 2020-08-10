@@ -28,12 +28,19 @@ contract VoteProxy {
     DSToken public iou;
     VoteQuorum public voteQuorum;
 
+    // --- Events ---
+    event AddVotingWeight(address sender, uint256 wad);
+    event RemoveVotingWeight(address sender, uint256 wad);
+    event RemoveAllVotingWeight(address sender, uint256 wad);
+    event Vote(address sender, address[] candidates);
+    event Vote(address sender, bytes32 ballot);
+
     constructor(VoteQuorum _voteQuorum, address _cold, address _hot) public {
         voteQuorum = _voteQuorum;
         cold = _cold;
         hot = _hot;
 
-        gov = voteQuorum.GOV();
+        gov = voteQuorum.PROT();
         iou = voteQuorum.IOU();
         gov.approve(address(voteQuorum), uint256(-1));
         iou.approve(address(voteQuorum), uint256(-1));
@@ -47,23 +54,28 @@ contract VoteProxy {
     function addVotingWeight(uint256 wad) public isAuthorized {
         gov.pull(cold, wad);              // protocol tokens from cold
         voteQuorum.addVotingWeight(wad);  // protocol tokens out, ious in
+        emit AddVotingWeight(msg.sender, wad);
     }
 
     function removeVotingWeight(uint256 wad) public isAuthorized {
         voteQuorum.removeVotingWeight(wad);  // ious out, protocol tokens in
         gov.push(cold, wad);                 // protocol tokens to cold
+        emit RemoveVotingWeight(msg.sender, wad);
     }
 
     function removeAllVotingWeight() public isAuthorized {
         voteQuorum.removeVotingWeight(voteQuorum.deposits(address(this)));
+        emit RemoveAllVotingWeight(msg.sender, gov.balanceOf(address(this)));
         gov.push(cold, gov.balanceOf(address(this)));
     }
 
     function vote(address[] memory candidates) public isAuthorized returns (bytes32) {
+        emit Vote(msg.sender, candidates);
         return voteQuorum.vote(candidates);
     }
 
     function vote(bytes32 ballot) public isAuthorized {
+        emit Vote(msg.sender, ballot);
         voteQuorum.vote(ballot);
     }
 }
