@@ -79,7 +79,7 @@ contract VoteProxyTest is DSTest {
     Voter random;
 
     function setUp() public {
-        gov = new DSToken("GOV");
+        gov = new DSToken("GOV", "GOV");
 
         VoteQuorumFactory quorumFactory = new VoteQuorumFactory();
         voteQuorum = quorumFactory.newVoteQuorum(gov, electionSize);
